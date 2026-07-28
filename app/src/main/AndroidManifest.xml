@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Needed to apply a picked image as the wallpaper from the Settings screen. -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
     <!--
       On Android 11+ (API 30), package visibility is restricted. A launcher needs
       to see every app that can be started from the home screen, so we declare the
