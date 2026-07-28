@@ -6,8 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import com.umain.launcher.ui.HomeViewModel
-import com.umain.launcher.ui.LauncherRoot
-import com.umain.launcher.ui.theme.UmainLauncherTheme
+import com.umain.launcher.ui.LauncherApp
 
 /**
  * The single Activity that backs the launcher. Because the manifest declares
@@ -22,9 +21,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            UmainLauncherTheme {
-                LauncherRoot(viewModel = viewModel)
-            }
+            LauncherApp(viewModel = viewModel)
         }
     }
 

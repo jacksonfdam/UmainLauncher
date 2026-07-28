@@ -2,6 +2,7 @@ package com.umain.launcher.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ private const val SWIPE_THRESHOLD = 8f
 fun HomeScreen(
     favorites: List<AppInfo>,
     onOpenDrawer: () -> Unit,
+    onOpenSettings: () -> Unit,
     onLaunchFavorite: (AppInfo) -> Unit,
     onUnpinFavorite: (AppInfo) -> Unit,
     modifier: Modifier = Modifier,
@@ -57,6 +59,9 @@ fun HomeScreen(
                 detectVerticalDragGestures { _, dragAmount ->
                     if (dragAmount < -SWIPE_THRESHOLD) onOpenDrawer()
                 }
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(onLongPress = { onOpenSettings() })
             },
     ) {
         Clock(

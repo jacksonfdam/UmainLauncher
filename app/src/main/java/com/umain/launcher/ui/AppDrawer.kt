@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AssistChip
@@ -48,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.umain.launcher.data.AppInfo
@@ -73,6 +75,9 @@ fun AppDrawer(
     onSetHidden: (Collection<String>, Boolean) -> Unit,
     onUninstall: (Collection<String>) -> Unit,
     onDevShortcut: (String) -> Boolean,
+    onOpenSettings: () -> Unit,
+    columns: Int,
+    iconSize: Dp,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -119,6 +124,15 @@ fun AppDrawer(
                 onUninstall = { onUninstall(selected); exitSelection() },
             )
         } else {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Apps", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                IconButton(onClick = onOpenSettings) {
+                    Icon(Icons.Rounded.Settings, contentDescription = "Launcher settings")
+                }
+            }
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -170,7 +184,7 @@ fun AppDrawer(
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
+                columns = GridCells.Fixed(columns),
                 contentPadding = PaddingValues(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -181,6 +195,7 @@ fun AppDrawer(
                         app = app,
                         selected = app.packageName in selected,
                         hidden = app.packageName in hiddenPackages,
+                        iconSize = iconSize,
                         onClick = { if (selectionMode) toggle(app.packageName) else onLaunch(app) },
                         onLongClick = { if (selectionMode) toggle(app.packageName) else sheetApp = app },
                     )
@@ -241,6 +256,7 @@ private fun AppGridItem(
     app: AppInfo,
     selected: Boolean,
     hidden: Boolean,
+    iconSize: Dp,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -253,7 +269,7 @@ private fun AppGridItem(
             .alpha(if (hidden) 0.45f else 1f),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        AppIcon(icon = app.icon, contentDescription = app.label, modifier = Modifier.size(52.dp))
+        AppIcon(icon = app.icon, contentDescription = app.label, modifier = Modifier.size(iconSize))
         Text(
             text = app.label,
             color = MaterialTheme.colorScheme.onSurface,
