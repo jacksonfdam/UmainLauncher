@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A simple "U" mark centered inside the adaptive-icon safe zone. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M39,34 L39,58 A15,15 0 0,0 69,58 L69,34 L61,34 L61,58 A7,7 0 0,1 47,58 L47,34 Z" />
+</vector>

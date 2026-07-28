@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Umain Launcher</string>
+    <string name="search_hint">Search apps</string>
+    <string name="drawer_hint">Swipe up to see your apps</string>
+    <string name="no_results">No apps match your search</string>
+</resources>
