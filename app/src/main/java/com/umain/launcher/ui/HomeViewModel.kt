@@ -1,12 +1,17 @@
 package com.umain.launcher.ui
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.umain.launcher.data.AppInfo
 import com.umain.launcher.data.AppRepository
+import com.umain.launcher.data.IconFilter
+import com.umain.launcher.data.IconSize
 import com.umain.launcher.data.LauncherPreferences
+import com.umain.launcher.data.LauncherSettings
 import com.umain.launcher.data.PackageDetails
+import com.umain.launcher.data.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +48,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             favorites.mapNotNull { pkg -> apps.firstOrNull { it.packageName == pkg } }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Appearance settings (grid, icon filter, theme). */
+    val settings: StateFlow<LauncherSettings> = preferences.settings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LauncherSettings())
+
     init {
         refresh()
     }
@@ -78,4 +87,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun inspectPackage(packageName: String): PackageDetails? =
         repository.inspectPackage(packageName)
+
+    // --- Appearance settings ---
+
+    fun setColumns(columns: Int) { viewModelScope.launch { preferences.setColumns(columns) } }
+    fun setIconSize(size: IconSize) { viewModelScope.launch { preferences.setIconSize(size) } }
+    fun setIconFilter(filter: IconFilter) { viewModelScope.launch { preferences.setIconFilter(filter) } }
+    fun setThemeMode(mode: ThemeMode) { viewModelScope.launch { preferences.setThemeMode(mode) } }
+    fun setDynamicColor(enabled: Boolean) { viewModelScope.launch { preferences.setDynamicColor(enabled) } }
+
+    // --- Wallpaper ---
+
+    fun openWallpaperPicker() = repository.openWallpaperPicker()
+
+    suspend fun applyWallpaper(uri: Uri, which: Int): Boolean = repository.applyWallpaper(uri, which)
 }
