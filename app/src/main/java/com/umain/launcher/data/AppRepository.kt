@@ -52,13 +52,6 @@ class AppRepository(private val context: Context) {
         context.startActivity(launchIntent)
     }
 
-    /** Opens the system uninstall confirmation dialog for [packageName]. */
-    fun requestUninstall(packageName: String) {
-        val intent = Intent(Intent.ACTION_DELETE, Uri.fromParts("package", packageName, null))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-    }
-
     /** Opens the system "App info" screen for [packageName]. */
     fun openAppInfo(packageName: String) {
         val intent = Intent(

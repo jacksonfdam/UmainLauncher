@@ -64,11 +64,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openAppInfo(packageName: String) = repository.openAppInfo(packageName)
 
-    fun requestUninstall(packageName: String) = repository.requestUninstall(packageName)
-
-    fun requestUninstall(packageNames: Collection<String>) =
-        packageNames.forEach(repository::requestUninstall)
-
     fun setHidden(packageNames: Collection<String>, hidden: Boolean) {
         viewModelScope.launch { preferences.setHidden(packageNames, hidden) }
     }

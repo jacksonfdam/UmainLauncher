@@ -4,6 +4,9 @@
     <!-- Needed to apply a picked image as the wallpaper from the Settings screen. -->
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
 
+    <!-- Lets the uninstall dialog be requested reliably (user still confirms each). -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
     <!--
       On Android 11+ (API 30), package visibility is restricted. A launcher needs
       to see every app that can be started from the home screen, so we declare the
