@@ -5,7 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -43,10 +42,12 @@ class LauncherPreferences(context: Context) {
             dynamicColor = p[DYNAMIC_COLOR] ?: true,
             colorTheme = p[COLOR_THEME].toEnum(ColorTheme.PURPLE),
             showStatusWidget = p[SHOW_WIDGET] ?: true,
-            widgetX = p[WIDGET_X] ?: 48f,
-            widgetY = p[WIDGET_Y] ?: 360f,
         )
     }
+
+    /** Per-widget home placement (position + scale), keyed by [WidgetIds]. */
+    val widgetLayout: Flow<Map<String, WidgetPlacement>> =
+        store.data.map { parseLayout(it[WIDGET_LAYOUT]) }
 
     suspend fun setHidden(packageNames: Collection<String>, hidden: Boolean) {
         store.edit { prefs ->
@@ -82,10 +83,25 @@ class LauncherPreferences(context: Context) {
 
     suspend fun setShowStatusWidget(show: Boolean) = store.edit { it[SHOW_WIDGET] = show }
 
-    suspend fun setWidgetOffset(x: Float, y: Float) = store.edit {
-        it[WIDGET_X] = x
-        it[WIDGET_Y] = y
+    suspend fun setWidgetPlacement(id: String, placement: WidgetPlacement) = store.edit {
+        val current = parseLayout(it[WIDGET_LAYOUT]).toMutableMap()
+        current[id] = placement
+        it[WIDGET_LAYOUT] = formatLayout(current)
     }
+
+    suspend fun resetWidgetLayout() = store.edit { it.remove(WIDGET_LAYOUT) }
+
+    private fun parseLayout(raw: String?): Map<String, WidgetPlacement> =
+        raw?.split(";").orEmpty().mapNotNull { entry ->
+            runCatching {
+                val (id, rest) = entry.split(":", limit = 2)
+                val (dx, dy, scale) = rest.split(",")
+                id to WidgetPlacement(dx.toFloat(), dy.toFloat(), scale.toFloat())
+            }.getOrNull()
+        }.toMap()
+
+    private fun formatLayout(map: Map<String, WidgetPlacement>): String =
+        map.entries.joinToString(";") { (id, p) -> "$id:${p.dx},${p.dy},${p.scale}" }
 
     private inline fun <reified T : Enum<T>> String?.toEnum(default: T): T =
         this?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: default
@@ -102,8 +118,7 @@ class LauncherPreferences(context: Context) {
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val COLOR_THEME = stringPreferencesKey("color_theme")
         val SHOW_WIDGET = booleanPreferencesKey("show_status_widget")
-        val WIDGET_X = floatPreferencesKey("widget_x")
-        val WIDGET_Y = floatPreferencesKey("widget_y")
+        val WIDGET_LAYOUT = stringPreferencesKey("widget_layout")
         const val SEPARATOR = "\n"
     }
 }

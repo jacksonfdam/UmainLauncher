@@ -39,6 +39,4 @@ data class LauncherSettings(
     val dynamicColor: Boolean = true,
     val colorTheme: ColorTheme = ColorTheme.PURPLE,
     val showStatusWidget: Boolean = true,
-    val widgetX: Float = 48f,
-    val widgetY: Float = 360f,
 )
