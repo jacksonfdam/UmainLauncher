@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.umain.launcher.data.AppInfo
+import com.umain.launcher.data.SystemStats
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -50,6 +51,11 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onLaunchFavorite: (AppInfo) -> Unit,
     onUnpinFavorite: (AppInfo) -> Unit,
+    showStatusWidget: Boolean,
+    widgetOffsetX: Float,
+    widgetOffsetY: Float,
+    statsProvider: () -> SystemStats,
+    onWidgetMove: (Float, Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -64,6 +70,14 @@ fun HomeScreen(
                 detectTapGestures(onLongPress = { onOpenSettings() })
             },
     ) {
+        if (showStatusWidget) {
+            StatusWidget(
+                statsProvider = statsProvider,
+                offsetX = widgetOffsetX,
+                offsetY = widgetOffsetY,
+                onMove = onWidgetMove,
+            )
+        }
         Clock(
             modifier = Modifier
                 .align(Alignment.TopCenter)

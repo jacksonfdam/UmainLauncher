@@ -89,6 +89,11 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
             onOpenSettings = { showSettings = true },
             onLaunchFavorite = { viewModel.launch(it.packageName) },
             onUnpinFavorite = { viewModel.toggleFavorite(it.packageName) },
+            showStatusWidget = settings.showStatusWidget,
+            widgetOffsetX = settings.widgetX,
+            widgetOffsetY = settings.widgetY,
+            statsProvider = { viewModel.systemStats() },
+            onWidgetMove = { x, y -> viewModel.setWidgetOffset(x, y) },
         )
 
         AnimatedVisibility(
@@ -125,6 +130,13 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
                     app = app,
                     loadDetails = { viewModel.inspectPackage(it) },
                     onLaunchActivity = { pkg, cls -> viewModel.launchActivity(pkg, cls) },
+                    onShareApk = {
+                        scope.launch {
+                            if (!viewModel.shareApk(app.packageName)) {
+                                Toast.makeText(context, "Couldn't export APK", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
                     onBack = { inspecting = null },
                 )
             }
@@ -141,8 +153,11 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
                 onColumns = viewModel::setColumns,
                 onIconSize = viewModel::setIconSize,
                 onIconFilter = viewModel::setIconFilter,
+                onIconShape = viewModel::setIconShape,
                 onThemeMode = viewModel::setThemeMode,
                 onDynamicColor = viewModel::setDynamicColor,
+                onColorTheme = viewModel::setColorTheme,
+                onShowStatusWidget = viewModel::setShowStatusWidget,
                 onOpenSystemWallpaper = viewModel::openWallpaperPicker,
                 onApplyWallpaper = { uri, which ->
                     scope.launch {
