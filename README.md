@@ -13,14 +13,18 @@ as small as possible:
 - **Hidden apps** persist (DataStore) and can be revealed with a toggle.
 
 - **Settings** (long-press the home screen, or the gear in the drawer): **layout**
-  (icon grid or a **Minimal AF** text-only list — names, no icons), grid columns and
-  icon size, an icon **color filter** (grayscale / desaturated / sepia), theme
-  (system/light/dark + Material You), and wallpaper (system picker or pick-and-apply).
+  (icon grid or a **Minimal AF** text-only list — names, no icons), grid columns,
+  icon size, icon **shape** (circle / squircle / rounded) and **color filter**
+  (grayscale / desaturated / sepia), theme (system/light/dark, Material You **or**
+  a preset accent), a draggable home **status widget** (battery / storage / memory),
+  and wallpaper (system picker or pick-and-apply).
 
 Dev/pentest oriented:
 
-- **Activity Launcher** — inspect a package (version, SDK levels, `debuggable`/`allowBackup`/
-  `system` flags, permissions) and fire any of its activities directly.
+- **Activity Launcher / package inspector** — inspect a package (version, SDK levels,
+  **signing SHA-256**, installer source, `debuggable`/`cleartext`/`allowBackup`/`system`
+  flags, **permissions with grant state + protection level**, **exported components**),
+  **export its APK**, and fire any of its activities directly.
 - **Dev shortcuts** — quick chips into Developer options, Device info and Settings.
 
 > The full step-by-step tutorial lives in [`posts/`](posts/) — in
