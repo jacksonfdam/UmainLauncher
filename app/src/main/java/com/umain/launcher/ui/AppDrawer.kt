@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -109,96 +110,100 @@ fun AppDrawer(
             .toList()
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp),
-    ) {
-        if (selectionMode) {
-            SelectionBar(
-                count = selected.size,
-                onCancel = ::exitSelection,
-                onHide = { onSetHidden(selected, true); exitSelection() },
-                onUninstall = { onUninstall(selected); exitSelection() },
-            )
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Apps", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                IconButton(onClick = onOpenSettings) {
-                    Icon(Icons.Rounded.Settings, contentDescription = "Launcher settings")
+    // Surface (not a bare .background modifier) so icons/text inherit the correct
+    // on-surface content color — otherwise IconButtons render near-invisible on a
+    // dark drawer.
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp),
+        ) {
+            if (selectionMode) {
+                SelectionBar(
+                    count = selected.size,
+                    onCancel = ::exitSelection,
+                    onHide = { onSetHidden(selected, true); exitSelection() },
+                    onUninstall = { onUninstall(selected); exitSelection() },
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Apps", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Rounded.Settings, contentDescription = "Launcher settings")
+                    }
                 }
-            }
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                placeholder = { Text("Search apps or package") },
-                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { showHidden = !showHidden }) {
-                        Icon(
-                            if (showHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                            contentDescription = if (showHidden) "Hide hidden apps" else "Show hidden apps",
-                            tint = if (showHidden) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    placeholder = { Text("Search apps or package") },
+                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { showHidden = !showHidden }) {
+                            Icon(
+                                if (showHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                                contentDescription = if (showHidden) "Hide hidden apps" else "Show hidden apps",
+                                tint = if (showHidden) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(28.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    DEV_SHORTCUTS.forEach { shortcut ->
+                        AssistChip(
+                            onClick = {
+                                if (!onDevShortcut(shortcut.action)) {
+                                    Toast.makeText(context, "Not available on this device", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            label = { Text(shortcut.label) },
+                            leadingIcon = { Icon(shortcut.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         )
                     }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(28.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                DEV_SHORTCUTS.forEach { shortcut ->
-                    AssistChip(
-                        onClick = {
-                            if (!onDevShortcut(shortcut.action)) {
-                                Toast.makeText(context, "Not available on this device", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        label = { Text(shortcut.label) },
-                        leadingIcon = { Icon(shortcut.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                    )
                 }
             }
-        }
 
-        if (filtered.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    if (apps.isEmpty()) "Loading apps…" else "No apps match your search",
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(columns),
-                contentPadding = PaddingValues(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize().navigationBarsPadding(),
-            ) {
-                items(filtered, key = { it.packageName }) { app ->
-                    AppGridItem(
-                        app = app,
-                        selected = app.packageName in selected,
-                        hidden = app.packageName in hiddenPackages,
-                        iconSize = iconSize,
-                        onClick = { if (selectionMode) toggle(app.packageName) else onLaunch(app) },
-                        onLongClick = { if (selectionMode) toggle(app.packageName) else sheetApp = app },
+            if (filtered.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        if (apps.isEmpty()) "Loading apps…" else "No apps match your search",
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize().navigationBarsPadding(),
+                ) {
+                    items(filtered, key = { it.packageName }) { app ->
+                        AppGridItem(
+                            app = app,
+                            selected = app.packageName in selected,
+                            hidden = app.packageName in hiddenPackages,
+                            iconSize = iconSize,
+                            onClick = { if (selectionMode) toggle(app.packageName) else onLaunch(app) },
+                            onLongClick = { if (selectionMode) toggle(app.packageName) else sheetApp = app },
+                        )
+                    }
                 }
             }
         }
@@ -242,10 +247,18 @@ private fun SelectionBar(
             modifier = Modifier.padding(start = 4.dp).weight(1f),
         )
         IconButton(onClick = onHide, enabled = count > 0) {
-            Icon(Icons.Rounded.VisibilityOff, contentDescription = "Hide selected")
+            Icon(
+                Icons.Rounded.VisibilityOff,
+                contentDescription = "Hide selected",
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
         }
         IconButton(onClick = onUninstall, enabled = count > 0) {
-            Icon(Icons.Rounded.Delete, contentDescription = "Uninstall selected")
+            Icon(
+                Icons.Rounded.Delete,
+                contentDescription = "Uninstall selected",
+                tint = MaterialTheme.colorScheme.error,
+            )
         }
     }
 }
