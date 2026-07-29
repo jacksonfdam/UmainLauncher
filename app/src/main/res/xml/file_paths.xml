@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Extracted APKs are copied here before sharing. -->
+    <cache-path name="apks" path="apks/" />
+</paths>

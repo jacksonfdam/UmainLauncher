@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -37,8 +38,13 @@ class LauncherPreferences(context: Context) {
             columns = (p[COLUMNS] ?: 4).coerceIn(COLUMN_RANGE.first, COLUMN_RANGE.last),
             iconSize = p[ICON_SIZE].toEnum(IconSize.MEDIUM),
             iconFilter = p[ICON_FILTER].toEnum(IconFilter.NONE),
+            iconShape = p[ICON_SHAPE].toEnum(IconShape.SYSTEM),
             themeMode = p[THEME_MODE].toEnum(ThemeMode.SYSTEM),
             dynamicColor = p[DYNAMIC_COLOR] ?: true,
+            colorTheme = p[COLOR_THEME].toEnum(ColorTheme.PURPLE),
+            showStatusWidget = p[SHOW_WIDGET] ?: true,
+            widgetX = p[WIDGET_X] ?: 48f,
+            widgetY = p[WIDGET_Y] ?: 360f,
         )
     }
 
@@ -66,9 +72,20 @@ class LauncherPreferences(context: Context) {
 
     suspend fun setIconFilter(filter: IconFilter) = store.edit { it[ICON_FILTER] = filter.name }
 
+    suspend fun setIconShape(shape: IconShape) = store.edit { it[ICON_SHAPE] = shape.name }
+
     suspend fun setThemeMode(mode: ThemeMode) = store.edit { it[THEME_MODE] = mode.name }
 
     suspend fun setDynamicColor(enabled: Boolean) = store.edit { it[DYNAMIC_COLOR] = enabled }
+
+    suspend fun setColorTheme(theme: ColorTheme) = store.edit { it[COLOR_THEME] = theme.name }
+
+    suspend fun setShowStatusWidget(show: Boolean) = store.edit { it[SHOW_WIDGET] = show }
+
+    suspend fun setWidgetOffset(x: Float, y: Float) = store.edit {
+        it[WIDGET_X] = x
+        it[WIDGET_Y] = y
+    }
 
     private inline fun <reified T : Enum<T>> String?.toEnum(default: T): T =
         this?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: default
@@ -80,8 +97,13 @@ class LauncherPreferences(context: Context) {
         val COLUMNS = intPreferencesKey("grid_columns")
         val ICON_SIZE = stringPreferencesKey("icon_size")
         val ICON_FILTER = stringPreferencesKey("icon_filter")
+        val ICON_SHAPE = stringPreferencesKey("icon_shape")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val COLOR_THEME = stringPreferencesKey("color_theme")
+        val SHOW_WIDGET = booleanPreferencesKey("show_status_widget")
+        val WIDGET_X = floatPreferencesKey("widget_x")
+        val WIDGET_Y = floatPreferencesKey("widget_y")
         const val SEPARATOR = "\n"
     }
 }
