@@ -16,8 +16,10 @@ as small as possible:
   (icon grid or a **Minimal AF** text-only list — names, no icons), grid columns,
   icon size, icon **shape** (circle / squircle / rounded) and **color filter**
   (grayscale / desaturated / sepia), theme (system/light/dark, Material You **or**
-  a preset accent), a draggable home **status widget** (battery / storage / memory),
-  and wallpaper (system picker or pick-and-apply).
+  a preset accent), and wallpaper (system picker or pick-and-apply).
+- **Movable home widgets** — the clock, favorites dock and a **status widget**
+  (battery / storage / memory) are each draggable, snap to a grid, and resize via a
+  corner handle. Positions persist; "Reset home layout" in Settings › Home.
 
 Dev/pentest oriented:
 
