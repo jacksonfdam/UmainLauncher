@@ -15,8 +15,15 @@ import com.umain.launcher.ui.theme.UmainLauncherTheme
 fun LauncherApp(viewModel: HomeViewModel) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
-    UmainLauncherTheme(themeMode = settings.themeMode, dynamicColor = settings.dynamicColor) {
-        CompositionLocalProvider(LocalIconFilter provides settings.iconFilter) {
+    UmainLauncherTheme(
+        themeMode = settings.themeMode,
+        dynamicColor = settings.dynamicColor,
+        colorTheme = settings.colorTheme,
+    ) {
+        CompositionLocalProvider(
+            LocalIconFilter provides settings.iconFilter,
+            LocalIconShape provides settings.iconShape,
+        ) {
             LauncherRoot(viewModel = viewModel, settings = settings)
         }
     }
