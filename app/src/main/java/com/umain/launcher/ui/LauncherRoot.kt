@@ -48,6 +48,7 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
     val hidden by viewModel.hiddenPackages.collectAsStateWithLifecycle()
     val favoritePackages by viewModel.favoritePackages.collectAsStateWithLifecycle()
     val favoriteApps by viewModel.favoriteApps.collectAsStateWithLifecycle()
+    val widgetLayout by viewModel.widgetLayout.collectAsStateWithLifecycle()
 
     var drawerOpen by remember { mutableStateOf(false) }
     var inspecting by remember { mutableStateOf<AppInfo?>(null) }
@@ -90,10 +91,9 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
             onLaunchFavorite = { viewModel.launch(it.packageName) },
             onUnpinFavorite = { viewModel.toggleFavorite(it.packageName) },
             showStatusWidget = settings.showStatusWidget,
-            widgetOffsetX = settings.widgetX,
-            widgetOffsetY = settings.widgetY,
+            layout = widgetLayout,
             statsProvider = { viewModel.systemStats() },
-            onWidgetMove = { x, y -> viewModel.setWidgetOffset(x, y) },
+            onPlacementChange = viewModel::setWidgetPlacement,
         )
 
         AnimatedVisibility(
@@ -158,6 +158,7 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
                 onDynamicColor = viewModel::setDynamicColor,
                 onColorTheme = viewModel::setColorTheme,
                 onShowStatusWidget = viewModel::setShowStatusWidget,
+                onResetLayout = viewModel::resetWidgetLayout,
                 onOpenSystemWallpaper = viewModel::openWallpaperPicker,
                 onApplyWallpaper = { uri, which ->
                     scope.launch {

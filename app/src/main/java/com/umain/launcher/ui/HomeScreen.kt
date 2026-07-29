@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -33,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.umain.launcher.data.AppInfo
 import com.umain.launcher.data.SystemStats
+import com.umain.launcher.data.WidgetIds
+import com.umain.launcher.data.WidgetPlacement
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,9 +41,15 @@ import java.util.Locale
 
 private const val SWIPE_THRESHOLD = 8f
 
+// Default placements (dp offset from each widget's anchor).
+private val DEFAULT_CLOCK = WidgetPlacement(dx = 0f, dy = 96f)
+private val DEFAULT_STATUS = WidgetPlacement(dx = 24f, dy = 220f)
+private val DEFAULT_DOCK = WidgetPlacement(dx = 0f, dy = -72f)
+
 /**
- * The wallpaper-facing home screen: a large clock, a favorites dock, and a hint to
- * swipe up. A vertical drag upward opens the app drawer.
+ * The wallpaper-facing home screen. The clock, favorites dock and status widget are
+ * each draggable + resizable via [MovableWidget]; an empty-area swipe up opens the
+ * drawer and a long-press opens Settings.
  */
 @Composable
 fun HomeScreen(
@@ -52,10 +59,9 @@ fun HomeScreen(
     onLaunchFavorite: (AppInfo) -> Unit,
     onUnpinFavorite: (AppInfo) -> Unit,
     showStatusWidget: Boolean,
-    widgetOffsetX: Float,
-    widgetOffsetY: Float,
+    layout: Map<String, WidgetPlacement>,
     statsProvider: () -> SystemStats,
-    onWidgetMove: (Float, Float) -> Unit,
+    onPlacementChange: (String, WidgetPlacement) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -70,46 +76,38 @@ fun HomeScreen(
                 detectTapGestures(onLongPress = { onOpenSettings() })
             },
     ) {
+        MovableWidget(
+            placement = layout[WidgetIds.CLOCK] ?: DEFAULT_CLOCK,
+            resizable = true,
+            onCommit = { onPlacementChange(WidgetIds.CLOCK, it) },
+            modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding(),
+        ) { Clock() }
+
         if (showStatusWidget) {
-            StatusWidget(
-                statsProvider = statsProvider,
-                offsetX = widgetOffsetX,
-                offsetY = widgetOffsetY,
-                onMove = onWidgetMove,
-            )
+            MovableWidget(
+                placement = layout[WidgetIds.STATUS] ?: DEFAULT_STATUS,
+                resizable = true,
+                onCommit = { onPlacementChange(WidgetIds.STATUS, it) },
+                modifier = Modifier.align(Alignment.TopStart).statusBarsPadding(),
+            ) { StatusWidgetContent(statsProvider) }
         }
-        Clock(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(top = 96.dp),
-        )
 
+        if (favorites.isNotEmpty()) {
+            MovableWidget(
+                placement = layout[WidgetIds.DOCK] ?: DEFAULT_DOCK,
+                resizable = true,
+                onCommit = { onPlacementChange(WidgetIds.DOCK, it) },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) { FavoritesDock(favorites, onLaunchFavorite, onUnpinFavorite) }
+        }
+
+        // Fixed swipe-up hint.
         Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = 40.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (favorites.isNotEmpty()) {
-                FavoritesDock(
-                    favorites = favorites,
-                    onLaunch = onLaunchFavorite,
-                    onUnpin = onUnpinFavorite,
-                )
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Rounded.KeyboardArrowUp,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp),
-                )
-                Text("Swipe up to see your apps", color = Color.White, fontSize = 13.sp, textAlign = TextAlign.Center)
-            }
+            Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+            Text("Swipe up to see your apps", color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center)
         }
     }
 }

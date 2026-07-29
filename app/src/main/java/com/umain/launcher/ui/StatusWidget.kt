@@ -1,10 +1,8 @@
 package com.umain.launcher.ui
 
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,42 +14,27 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.umain.launcher.data.SystemStats
 import kotlinx.coroutines.delay
 import java.util.Locale
-import kotlin.math.roundToInt
 
 /**
- * Draggable home widget showing battery, free storage and memory. The position is
- * committed to persistence on drag end; stats refresh every few seconds.
+ * Visual content of the home status widget: battery, free storage and memory. Drag /
+ * resize is provided by the surrounding [MovableWidget]; this just renders and polls.
  */
 @Composable
-fun StatusWidget(
+fun StatusWidgetContent(
     statsProvider: () -> SystemStats,
-    offsetX: Float,
-    offsetY: Float,
-    onMove: (Float, Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var ox by remember { mutableFloatStateOf(offsetX) }
-    var oy by remember { mutableFloatStateOf(offsetY) }
-    // Adopt persisted/late-loaded position (won't fire mid-drag, we commit on end).
-    LaunchedEffect(offsetX, offsetY) { ox = offsetX; oy = offsetY }
-
     val stats by produceState(initialValue = statsProvider()) {
         while (true) {
             value = statsProvider()
@@ -63,15 +46,7 @@ fun StatusWidget(
         color = Color.Black.copy(alpha = 0.32f),
         contentColor = Color.White,
         shape = RoundedCornerShape(20.dp),
-        modifier = modifier
-            .offset { IntOffset(ox.roundToInt(), oy.roundToInt()) }
-            .pointerInput(Unit) {
-                detectDragGestures(onDragEnd = { onMove(ox, oy) }) { change, drag ->
-                    change.consume()
-                    ox += drag.x
-                    oy += drag.y
-                }
-            },
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),

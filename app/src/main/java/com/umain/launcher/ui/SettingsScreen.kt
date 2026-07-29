@@ -65,6 +65,7 @@ fun SettingsScreen(
     onDynamicColor: (Boolean) -> Unit,
     onColorTheme: (ColorTheme) -> Unit,
     onShowStatusWidget: (Boolean) -> Unit,
+    onResetLayout: () -> Unit,
     onOpenSystemWallpaper: () -> Unit,
     onApplyWallpaper: (Uri, Int) -> Unit,
     onBack: () -> Unit,
@@ -166,6 +167,14 @@ fun SettingsScreen(
                             )
                         }
                         Switch(checked = settings.showStatusWidget, onCheckedChange = onShowStatusWidget)
+                    }
+                    Text(
+                        "Drag widgets to move, drag the corner handle to resize; they snap to a grid.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(onClick = onResetLayout, modifier = Modifier.fillMaxWidth()) {
+                        Text("Reset home layout")
                     }
                 }
 

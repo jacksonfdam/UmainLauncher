@@ -16,6 +16,7 @@ import com.umain.launcher.data.LayoutMode
 import com.umain.launcher.data.PackageDetails
 import com.umain.launcher.data.SystemStats
 import com.umain.launcher.data.ThemeMode
+import com.umain.launcher.data.WidgetPlacement
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +56,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** Appearance settings (grid, icon filter, theme). */
     val settings: StateFlow<LauncherSettings> = preferences.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LauncherSettings())
+
+    /** Per-widget home placement (position + scale). */
+    val widgetLayout: StateFlow<Map<String, WidgetPlacement>> = preferences.widgetLayout
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     init {
         refresh()
@@ -100,7 +105,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun setDynamicColor(enabled: Boolean) { viewModelScope.launch { preferences.setDynamicColor(enabled) } }
     fun setColorTheme(theme: ColorTheme) { viewModelScope.launch { preferences.setColorTheme(theme) } }
     fun setShowStatusWidget(show: Boolean) { viewModelScope.launch { preferences.setShowStatusWidget(show) } }
-    fun setWidgetOffset(x: Float, y: Float) { viewModelScope.launch { preferences.setWidgetOffset(x, y) } }
+    fun setWidgetPlacement(id: String, placement: WidgetPlacement) {
+        viewModelScope.launch { preferences.setWidgetPlacement(id, placement) }
+    }
+    fun resetWidgetLayout() { viewModelScope.launch { preferences.resetWidgetLayout() } }
 
     fun systemStats(): SystemStats = repository.readSystemStats()
 
