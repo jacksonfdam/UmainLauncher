@@ -33,6 +33,7 @@ class LauncherPreferences(context: Context) {
     /** All appearance settings as one object. */
     val settings: Flow<LauncherSettings> = store.data.map { p ->
         LauncherSettings(
+            layout = p[LAYOUT].toEnum(LayoutMode.GRID),
             columns = (p[COLUMNS] ?: 4).coerceIn(COLUMN_RANGE.first, COLUMN_RANGE.last),
             iconSize = p[ICON_SIZE].toEnum(IconSize.MEDIUM),
             iconFilter = p[ICON_FILTER].toEnum(IconFilter.NONE),
@@ -56,6 +57,8 @@ class LauncherPreferences(context: Context) {
         }
     }
 
+    suspend fun setLayout(mode: LayoutMode) = store.edit { it[LAYOUT] = mode.name }
+
     suspend fun setColumns(columns: Int) =
         store.edit { it[COLUMNS] = columns.coerceIn(COLUMN_RANGE.first, COLUMN_RANGE.last) }
 
@@ -73,6 +76,7 @@ class LauncherPreferences(context: Context) {
     private companion object {
         val HIDDEN = stringSetPreferencesKey("hidden_apps")
         val FAVORITES = stringPreferencesKey("favorite_apps")
+        val LAYOUT = stringPreferencesKey("layout_mode")
         val COLUMNS = intPreferencesKey("grid_columns")
         val ICON_SIZE = stringPreferencesKey("icon_size")
         val ICON_FILTER = stringPreferencesKey("icon_filter")

@@ -109,6 +109,7 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
                 onUninstall = { pendingUninstall = it.toList() },
                 onDevShortcut = { action -> viewModel.openSettings(action) },
                 onOpenSettings = { showSettings = true },
+                layout = settings.layout,
                 columns = settings.columns,
                 iconSize = settings.iconSize.dp,
             )
@@ -136,6 +137,7 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
         ) {
             SettingsScreen(
                 settings = settings,
+                onLayout = viewModel::setLayout,
                 onColumns = viewModel::setColumns,
                 onIconSize = viewModel::setIconSize,
                 onIconFilter = viewModel::setIconFilter,

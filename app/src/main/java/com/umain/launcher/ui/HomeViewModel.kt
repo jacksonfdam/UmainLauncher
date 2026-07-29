@@ -10,6 +10,7 @@ import com.umain.launcher.data.IconFilter
 import com.umain.launcher.data.IconSize
 import com.umain.launcher.data.LauncherPreferences
 import com.umain.launcher.data.LauncherSettings
+import com.umain.launcher.data.LayoutMode
 import com.umain.launcher.data.PackageDetails
 import com.umain.launcher.data.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -85,6 +86,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Appearance settings ---
 
+    fun setLayout(mode: LayoutMode) { viewModelScope.launch { preferences.setLayout(mode) } }
     fun setColumns(columns: Int) { viewModelScope.launch { preferences.setColumns(columns) } }
     fun setIconSize(size: IconSize) { viewModelScope.launch { preferences.setIconSize(size) } }
     fun setIconFilter(filter: IconFilter) { viewModelScope.launch { preferences.setIconFilter(filter) } }

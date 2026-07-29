@@ -43,6 +43,7 @@ import com.umain.launcher.data.COLUMN_RANGE
 import com.umain.launcher.data.IconFilter
 import com.umain.launcher.data.IconSize
 import com.umain.launcher.data.LauncherSettings
+import com.umain.launcher.data.LayoutMode
 import com.umain.launcher.data.ThemeMode
 
 /**
@@ -53,6 +54,7 @@ import com.umain.launcher.data.ThemeMode
 @Composable
 fun SettingsScreen(
     settings: LauncherSettings,
+    onLayout: (LayoutMode) -> Unit,
     onColumns: (Int) -> Unit,
     onIconSize: (IconSize) -> Unit,
     onIconFilter: (IconFilter) -> Unit,
@@ -89,27 +91,40 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                // --- Grid ---
-                Section("Grid") {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Columns", Modifier.weight(1f))
-                        IconButton(
-                            onClick = { onColumns(settings.columns - 1) },
-                            enabled = settings.columns > COLUMN_RANGE.first,
-                        ) { Icon(Icons.Rounded.Remove, contentDescription = "Fewer columns") }
-                        Text(settings.columns.toString(), style = MaterialTheme.typography.titleMedium)
-                        IconButton(
-                            onClick = { onColumns(settings.columns + 1) },
-                            enabled = settings.columns < COLUMN_RANGE.last,
-                        ) { Icon(Icons.Rounded.Add, contentDescription = "More columns") }
+                // --- Layout ---
+                Section("Layout") {
+                    ChipRow(LayoutMode.entries, settings.layout, onLayout) { it.displayName() }
+                    if (settings.layout == LayoutMode.MINIMAL) {
+                        Text(
+                            "Text-only app list — no icons, no distractions.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
-                    Text("Icon size", style = MaterialTheme.typography.bodyMedium)
-                    ChipRow(IconSize.entries, settings.iconSize, onIconSize) { it.displayName() }
                 }
 
-                // --- Icons ---
-                Section("Icon filter") {
-                    ChipRow(IconFilter.entries, settings.iconFilter, onIconFilter) { it.displayName() }
+                // --- Grid & icons (only relevant in the Grid layout) ---
+                if (settings.layout == LayoutMode.GRID) {
+                    Section("Grid") {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Columns", Modifier.weight(1f))
+                            IconButton(
+                                onClick = { onColumns(settings.columns - 1) },
+                                enabled = settings.columns > COLUMN_RANGE.first,
+                            ) { Icon(Icons.Rounded.Remove, contentDescription = "Fewer columns") }
+                            Text(settings.columns.toString(), style = MaterialTheme.typography.titleMedium)
+                            IconButton(
+                                onClick = { onColumns(settings.columns + 1) },
+                                enabled = settings.columns < COLUMN_RANGE.last,
+                            ) { Icon(Icons.Rounded.Add, contentDescription = "More columns") }
+                        }
+                        Text("Icon size", style = MaterialTheme.typography.bodyMedium)
+                        ChipRow(IconSize.entries, settings.iconSize, onIconSize) { it.displayName() }
+                    }
+
+                    Section("Icon filter") {
+                        ChipRow(IconFilter.entries, settings.iconFilter, onIconFilter) { it.displayName() }
+                    }
                 }
 
                 // --- Theme ---

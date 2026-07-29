@@ -13,11 +13,18 @@ enum class IconSize { SMALL, MEDIUM, LARGE }
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /**
+ * Drawer layout. [GRID] is the icon grid; [MINIMAL] is a text-only "Minimal AF"
+ * list — app names, no icons, no chrome.
+ */
+enum class LayoutMode { GRID, MINIMAL }
+
+/**
  * User-configurable launcher settings, persisted via [LauncherPreferences].
  * Kept Compose-free so it lives in the data layer; the UI layer maps the enums
  * to dp / ColorFilter / color schemes.
  */
 data class LauncherSettings(
+    val layout: LayoutMode = LayoutMode.GRID,
     val columns: Int = 4,
     val iconSize: IconSize = IconSize.MEDIUM,
     val iconFilter: IconFilter = IconFilter.NONE,

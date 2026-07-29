@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -54,6 +57,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.umain.launcher.data.AppInfo
+import com.umain.launcher.data.LayoutMode
 
 /**
  * Full-screen, searchable grid of installed apps. Supports:
@@ -77,6 +81,7 @@ fun AppDrawer(
     onUninstall: (Collection<String>) -> Unit,
     onDevShortcut: (String) -> Boolean,
     onOpenSettings: () -> Unit,
+    layout: LayoutMode,
     columns: Int,
     iconSize: Dp,
     modifier: Modifier = Modifier,
@@ -132,7 +137,11 @@ fun AppDrawer(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Apps", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    if (layout == LayoutMode.GRID) {
+                        Text("Apps", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Rounded.Settings, contentDescription = "Launcher settings")
                     }
@@ -158,23 +167,25 @@ fun AppDrawer(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    DEV_SHORTCUTS.forEach { shortcut ->
-                        AssistChip(
-                            onClick = {
-                                if (!onDevShortcut(shortcut.action)) {
-                                    Toast.makeText(context, "Not available on this device", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            label = { Text(shortcut.label) },
-                            leadingIcon = { Icon(shortcut.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                        )
+                if (layout == LayoutMode.GRID) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        DEV_SHORTCUTS.forEach { shortcut ->
+                            AssistChip(
+                                onClick = {
+                                    if (!onDevShortcut(shortcut.action)) {
+                                        Toast.makeText(context, "Not available on this device", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                label = { Text(shortcut.label) },
+                                leadingIcon = { Icon(shortcut.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            )
+                        }
                     }
                 }
             }
@@ -186,6 +197,14 @@ fun AppDrawer(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
+            } else if (layout == LayoutMode.MINIMAL) {
+                MinimalAppList(
+                    apps = filtered,
+                    selectedPackages = selected,
+                    hiddenPackages = hiddenPackages,
+                    onClick = { if (selectionMode) toggle(it.packageName) else onLaunch(it) },
+                    onLongClick = { if (selectionMode) toggle(it.packageName) else sheetApp = it },
+                )
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(columns),
@@ -258,6 +277,44 @@ private fun SelectionBar(
                 Icons.Rounded.Delete,
                 contentDescription = "Uninstall selected",
                 tint = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+/** "Minimal AF" layout: a text-only, right-aligned list of app names — no icons. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun MinimalAppList(
+    apps: List<AppInfo>,
+    selectedPackages: Set<String>,
+    hiddenPackages: Set<String>,
+    onClick: (AppInfo) -> Unit,
+    onLongClick: (AppInfo) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().navigationBarsPadding(),
+        contentPadding = PaddingValues(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        items(apps, key = { it.packageName }) { app ->
+            Text(
+                text = app.label,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (app.packageName in selectedPackages) MaterialTheme.colorScheme.primaryContainer
+                        else Color.Transparent,
+                    )
+                    .combinedClickable(onClick = { onClick(app) }, onLongClick = { onLongClick(app) })
+                    .padding(horizontal = 12.dp, vertical = 12.dp)
+                    .alpha(if (app.packageName in hiddenPackages) 0.45f else 1f),
             )
         }
     }
