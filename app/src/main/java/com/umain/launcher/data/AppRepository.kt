@@ -1,5 +1,6 @@
 package com.umain.launcher.data
 
+import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -51,13 +52,6 @@ class AppRepository(private val context: Context) {
         context.startActivity(launchIntent)
     }
 
-    /** Opens the system uninstall confirmation dialog for [packageName]. */
-    fun requestUninstall(packageName: String) {
-        val intent = Intent(Intent.ACTION_DELETE, Uri.fromParts("package", packageName, null))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-    }
-
     /** Opens the system "App info" screen for [packageName]. */
     fun openAppInfo(packageName: String) {
         val intent = Intent(
@@ -85,6 +79,25 @@ class AppRepository(private val context: Context) {
         true
     } catch (e: Exception) {
         false
+    }
+
+    /** Opens the system wallpaper picker (no permission required). */
+    fun openWallpaperPicker() {
+        val chooser = Intent.createChooser(Intent(Intent.ACTION_SET_WALLPAPER), "Set wallpaper")
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(chooser)
+    }
+
+    /**
+     * Applies [uri] as the wallpaper. [which] is a [WallpaperManager] FLAG_SYSTEM /
+     * FLAG_LOCK bitmask. Requires the SET_WALLPAPER permission (declared in the manifest).
+     */
+    suspend fun applyWallpaper(uri: Uri, which: Int): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            context.contentResolver.openInputStream(uri)!!.use { input ->
+                WallpaperManager.getInstance(context).setStream(input, null, true, which)
+            }
+        }.isSuccess
     }
 
     /** Inspects a package for the Activity Launcher / pentest view. */

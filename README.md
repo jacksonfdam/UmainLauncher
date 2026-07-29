@@ -12,6 +12,11 @@ as small as possible:
 - **Multi-select mode** to hide or uninstall several apps at once.
 - **Hidden apps** persist (DataStore) and can be revealed with a toggle.
 
+- **Settings** (long-press the home screen, or the gear in the drawer): **layout**
+  (icon grid or a **Minimal AF** text-only list — names, no icons), grid columns and
+  icon size, an icon **color filter** (grayscale / desaturated / sepia), theme
+  (system/light/dark + Material You), and wallpaper (system picker or pick-and-apply).
+
 Dev/pentest oriented:
 
 - **Activity Launcher** — inspect a package (version, SDK levels, `debuggable`/`allowBackup`/

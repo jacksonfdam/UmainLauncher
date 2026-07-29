@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -26,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AssistChip
@@ -33,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,9 +53,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.umain.launcher.data.AppInfo
+import com.umain.launcher.data.LayoutMode
 
 /**
  * Full-screen, searchable grid of installed apps. Supports:
@@ -73,6 +80,10 @@ fun AppDrawer(
     onSetHidden: (Collection<String>, Boolean) -> Unit,
     onUninstall: (Collection<String>) -> Unit,
     onDevShortcut: (String) -> Boolean,
+    onOpenSettings: () -> Unit,
+    layout: LayoutMode,
+    columns: Int,
+    iconSize: Dp,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -104,86 +115,114 @@ fun AppDrawer(
             .toList()
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp),
-    ) {
-        if (selectionMode) {
-            SelectionBar(
-                count = selected.size,
-                onCancel = ::exitSelection,
-                onHide = { onSetHidden(selected, true); exitSelection() },
-                onUninstall = { onUninstall(selected); exitSelection() },
-            )
-        } else {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                placeholder = { Text("Search apps or package") },
-                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { showHidden = !showHidden }) {
-                        Icon(
-                            if (showHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                            contentDescription = if (showHidden) "Hide hidden apps" else "Show hidden apps",
-                            tint = if (showHidden) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+    // Surface (not a bare .background modifier) so icons/text inherit the correct
+    // on-surface content color — otherwise IconButtons render near-invisible on a
+    // dark drawer.
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp),
+        ) {
+            if (selectionMode) {
+                SelectionBar(
+                    count = selected.size,
+                    onCancel = ::exitSelection,
+                    onHide = { onSetHidden(selected, true); exitSelection() },
+                    onUninstall = { onUninstall(selected); exitSelection() },
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (layout == LayoutMode.GRID) {
+                        Text("Apps", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    } else {
+                        Spacer(Modifier.weight(1f))
                     }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(28.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            )
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Rounded.Settings, contentDescription = "Launcher settings")
+                    }
+                }
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    placeholder = { Text("Search apps or package") },
+                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { showHidden = !showHidden }) {
+                            Icon(
+                                if (showHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                                contentDescription = if (showHidden) "Hide hidden apps" else "Show hidden apps",
+                                tint = if (showHidden) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(28.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                DEV_SHORTCUTS.forEach { shortcut ->
-                    AssistChip(
-                        onClick = {
-                            if (!onDevShortcut(shortcut.action)) {
-                                Toast.makeText(context, "Not available on this device", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        label = { Text(shortcut.label) },
-                        leadingIcon = { Icon(shortcut.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                    )
+                if (layout == LayoutMode.GRID) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        DEV_SHORTCUTS.forEach { shortcut ->
+                            AssistChip(
+                                onClick = {
+                                    if (!onDevShortcut(shortcut.action)) {
+                                        Toast.makeText(context, "Not available on this device", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                label = { Text(shortcut.label) },
+                                leadingIcon = { Icon(shortcut.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            )
+                        }
+                    }
                 }
             }
-        }
 
-        if (filtered.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    if (apps.isEmpty()) "Loading apps…" else "No apps match your search",
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
-                contentPadding = PaddingValues(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize().navigationBarsPadding(),
-            ) {
-                items(filtered, key = { it.packageName }) { app ->
-                    AppGridItem(
-                        app = app,
-                        selected = app.packageName in selected,
-                        hidden = app.packageName in hiddenPackages,
-                        onClick = { if (selectionMode) toggle(app.packageName) else onLaunch(app) },
-                        onLongClick = { if (selectionMode) toggle(app.packageName) else sheetApp = app },
+            if (filtered.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        if (apps.isEmpty()) "Loading apps…" else "No apps match your search",
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
+                }
+            } else if (layout == LayoutMode.MINIMAL) {
+                MinimalAppList(
+                    apps = filtered,
+                    selectedPackages = selected,
+                    hiddenPackages = hiddenPackages,
+                    onClick = { if (selectionMode) toggle(it.packageName) else onLaunch(it) },
+                    onLongClick = { if (selectionMode) toggle(it.packageName) else sheetApp = it },
+                )
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize().navigationBarsPadding(),
+                ) {
+                    items(filtered, key = { it.packageName }) { app ->
+                        AppGridItem(
+                            app = app,
+                            selected = app.packageName in selected,
+                            hidden = app.packageName in hiddenPackages,
+                            iconSize = iconSize,
+                            onClick = { if (selectionMode) toggle(app.packageName) else onLaunch(app) },
+                            onLongClick = { if (selectionMode) toggle(app.packageName) else sheetApp = app },
+                        )
+                    }
                 }
             }
         }
@@ -227,10 +266,56 @@ private fun SelectionBar(
             modifier = Modifier.padding(start = 4.dp).weight(1f),
         )
         IconButton(onClick = onHide, enabled = count > 0) {
-            Icon(Icons.Rounded.VisibilityOff, contentDescription = "Hide selected")
+            Icon(
+                Icons.Rounded.VisibilityOff,
+                contentDescription = "Hide selected",
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
         }
         IconButton(onClick = onUninstall, enabled = count > 0) {
-            Icon(Icons.Rounded.Delete, contentDescription = "Uninstall selected")
+            Icon(
+                Icons.Rounded.Delete,
+                contentDescription = "Uninstall selected",
+                tint = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+/** "Minimal AF" layout: a text-only, right-aligned list of app names — no icons. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun MinimalAppList(
+    apps: List<AppInfo>,
+    selectedPackages: Set<String>,
+    hiddenPackages: Set<String>,
+    onClick: (AppInfo) -> Unit,
+    onLongClick: (AppInfo) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().navigationBarsPadding(),
+        contentPadding = PaddingValues(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        items(apps, key = { it.packageName }) { app ->
+            Text(
+                text = app.label,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (app.packageName in selectedPackages) MaterialTheme.colorScheme.primaryContainer
+                        else Color.Transparent,
+                    )
+                    .combinedClickable(onClick = { onClick(app) }, onLongClick = { onLongClick(app) })
+                    .padding(horizontal = 12.dp, vertical = 12.dp)
+                    .alpha(if (app.packageName in hiddenPackages) 0.45f else 1f),
+            )
         }
     }
 }
@@ -241,6 +326,7 @@ private fun AppGridItem(
     app: AppInfo,
     selected: Boolean,
     hidden: Boolean,
+    iconSize: Dp,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
@@ -253,7 +339,7 @@ private fun AppGridItem(
             .alpha(if (hidden) 0.45f else 1f),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        AppIcon(icon = app.icon, contentDescription = app.label, modifier = Modifier.size(52.dp))
+        AppIcon(icon = app.icon, contentDescription = app.label, modifier = Modifier.size(iconSize))
         Text(
             text = app.label,
             color = MaterialTheme.colorScheme.onSurface,

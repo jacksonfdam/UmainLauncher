@@ -3,7 +3,9 @@ package com.umain.launcher.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -13,8 +15,8 @@ import kotlinx.coroutines.flow.map
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "launcher_prefs")
 
 /**
- * Persists the user's launcher choices: which apps are hidden from the drawer and
- * which are pinned to the home dock. Backed by Preferences DataStore.
+ * Persists the user's launcher choices: hidden apps, the favorites dock, and the
+ * appearance settings (grid, icon filter, theme). Backed by Preferences DataStore.
  */
 class LauncherPreferences(context: Context) {
 
@@ -28,11 +30,16 @@ class LauncherPreferences(context: Context) {
         prefs[FAVORITES]?.split(SEPARATOR)?.filter { it.isNotEmpty() } ?: emptyList()
     }
 
-    suspend fun setHidden(packageName: String, hidden: Boolean) {
-        store.edit { prefs ->
-            val current = prefs[HIDDEN] ?: emptySet()
-            prefs[HIDDEN] = if (hidden) current + packageName else current - packageName
-        }
+    /** All appearance settings as one object. */
+    val settings: Flow<LauncherSettings> = store.data.map { p ->
+        LauncherSettings(
+            layout = p[LAYOUT].toEnum(LayoutMode.GRID),
+            columns = (p[COLUMNS] ?: 4).coerceIn(COLUMN_RANGE.first, COLUMN_RANGE.last),
+            iconSize = p[ICON_SIZE].toEnum(IconSize.MEDIUM),
+            iconFilter = p[ICON_FILTER].toEnum(IconFilter.NONE),
+            themeMode = p[THEME_MODE].toEnum(ThemeMode.SYSTEM),
+            dynamicColor = p[DYNAMIC_COLOR] ?: true,
+        )
     }
 
     suspend fun setHidden(packageNames: Collection<String>, hidden: Boolean) {
@@ -50,18 +57,31 @@ class LauncherPreferences(context: Context) {
         }
     }
 
-    /** Drops a package from both sets — call after an app is uninstalled. */
-    suspend fun forget(packageName: String) {
-        store.edit { prefs ->
-            prefs[HIDDEN] = (prefs[HIDDEN] ?: emptySet()) - packageName
-            val favs = prefs[FAVORITES]?.split(SEPARATOR)?.filter { it.isNotEmpty() } ?: emptyList()
-            prefs[FAVORITES] = (favs - packageName).joinToString(SEPARATOR)
-        }
-    }
+    suspend fun setLayout(mode: LayoutMode) = store.edit { it[LAYOUT] = mode.name }
+
+    suspend fun setColumns(columns: Int) =
+        store.edit { it[COLUMNS] = columns.coerceIn(COLUMN_RANGE.first, COLUMN_RANGE.last) }
+
+    suspend fun setIconSize(size: IconSize) = store.edit { it[ICON_SIZE] = size.name }
+
+    suspend fun setIconFilter(filter: IconFilter) = store.edit { it[ICON_FILTER] = filter.name }
+
+    suspend fun setThemeMode(mode: ThemeMode) = store.edit { it[THEME_MODE] = mode.name }
+
+    suspend fun setDynamicColor(enabled: Boolean) = store.edit { it[DYNAMIC_COLOR] = enabled }
+
+    private inline fun <reified T : Enum<T>> String?.toEnum(default: T): T =
+        this?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: default
 
     private companion object {
         val HIDDEN = stringSetPreferencesKey("hidden_apps")
         val FAVORITES = stringPreferencesKey("favorite_apps")
+        val LAYOUT = stringPreferencesKey("layout_mode")
+        val COLUMNS = intPreferencesKey("grid_columns")
+        val ICON_SIZE = stringPreferencesKey("icon_size")
+        val ICON_FILTER = stringPreferencesKey("icon_filter")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
+        val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         const val SEPARATOR = "\n"
     }
 }
