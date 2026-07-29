@@ -1,12 +1,15 @@
 package com.umain.launcher.ui
 
-import androidx.compose.foundation.Image
+import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -16,11 +19,18 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,35 +41,67 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
 import com.umain.launcher.data.AppInfo
 
-private const val ICON_PX = 144
-
 /**
- * Full-screen, searchable grid of every installed app.
+ * Full-screen, searchable grid of installed apps. Supports:
+ *  - search by label **or** package name (dev-friendly),
+ *  - long-press → per-app [AppActionSheet],
+ *  - multi-select mode to hide or uninstall several apps at once,
+ *  - a "show hidden" toggle, and a row of dev shortcuts.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppDrawer(
     apps: List<AppInfo>,
-    onAppClick: (AppInfo) -> Unit,
+    hiddenPackages: Set<String>,
+    favoritePackages: Set<String>,
+    onLaunch: (AppInfo) -> Unit,
+    onOpenAppInfo: (AppInfo) -> Unit,
+    onCopyPackage: (AppInfo) -> Unit,
+    onInspect: (AppInfo) -> Unit,
+    onToggleFavorite: (AppInfo) -> Unit,
+    onSetHidden: (Collection<String>, Boolean) -> Unit,
+    onUninstall: (Collection<String>) -> Unit,
+    onDevShortcut: (String) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
-    var query by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
-    val filtered = remember(apps, query) {
-        if (query.isBlank()) {
-            apps
-        } else {
-            apps.filter { it.label.contains(query.trim(), ignoreCase = true) }
-        }
+    var query by remember { mutableStateOf("") }
+    var showHidden by remember { mutableStateOf(false) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf(emptySet<String>()) }
+    var sheetApp by remember { mutableStateOf<AppInfo?>(null) }
+
+    fun exitSelection() {
+        selectionMode = false
+        selected = emptySet()
+    }
+
+    fun toggle(pkg: String) {
+        selected = if (pkg in selected) selected - pkg else selected + pkg
+    }
+
+    val filtered = remember(apps, query, showHidden, hiddenPackages) {
+        apps.asSequence()
+            .filter { showHidden || it.packageName !in hiddenPackages }
+            .filter {
+                val q = query.trim()
+                q.isBlank() ||
+                    it.label.contains(q, ignoreCase = true) ||
+                    it.packageName.contains(q, ignoreCase = true)
+            }
+            .toList()
     }
 
     Column(
@@ -69,25 +111,60 @@ fun AppDrawer(
             .statusBarsPadding()
             .padding(horizontal = 16.dp),
     ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            placeholder = { Text("Search apps") },
-            leadingIcon = {
-                Icon(Icons.Rounded.Search, contentDescription = null)
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(28.dp),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        )
+        if (selectionMode) {
+            SelectionBar(
+                count = selected.size,
+                onCancel = ::exitSelection,
+                onHide = { onSetHidden(selected, true); exitSelection() },
+                onUninstall = { onUninstall(selected); exitSelection() },
+            )
+        } else {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                placeholder = { Text("Search apps or package") },
+                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { showHidden = !showHidden }) {
+                        Icon(
+                            if (showHidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                            contentDescription = if (showHidden) "Hide hidden apps" else "Show hidden apps",
+                            tint = if (showHidden) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(28.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                DEV_SHORTCUTS.forEach { shortcut ->
+                    AssistChip(
+                        onClick = {
+                            if (!onDevShortcut(shortcut.action)) {
+                                Toast.makeText(context, "Not available on this device", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        label = { Text(shortcut.label) },
+                        leadingIcon = { Icon(shortcut.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    )
+                }
+            }
+        }
 
         if (filtered.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = if (apps.isEmpty()) "Loading apps…" else "No apps match your search",
+                    if (apps.isEmpty()) "Loading apps…" else "No apps match your search",
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -97,42 +174,86 @@ fun AppDrawer(
                 contentPadding = PaddingValues(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding(),
+                modifier = Modifier.fillMaxSize().navigationBarsPadding(),
             ) {
                 items(filtered, key = { it.packageName }) { app ->
-                    AppGridItem(app = app, onClick = { onAppClick(app) })
+                    AppGridItem(
+                        app = app,
+                        selected = app.packageName in selected,
+                        hidden = app.packageName in hiddenPackages,
+                        onClick = { if (selectionMode) toggle(app.packageName) else onLaunch(app) },
+                        onLongClick = { if (selectionMode) toggle(app.packageName) else sheetApp = app },
+                    )
                 }
             }
         }
     }
+
+    sheetApp?.let { app ->
+        AppActionSheet(
+            app = app,
+            isFavorite = app.packageName in favoritePackages,
+            isHidden = app.packageName in hiddenPackages,
+            onDismiss = { sheetApp = null },
+            onOpenAppInfo = { onOpenAppInfo(app) },
+            onCopyPackage = { onCopyPackage(app) },
+            onInspect = { onInspect(app) },
+            onToggleFavorite = { onToggleFavorite(app) },
+            onToggleHidden = { onSetHidden(listOf(app.packageName), app.packageName !in hiddenPackages) },
+            onUninstall = { onUninstall(listOf(app.packageName)) },
+            onSelectMultiple = {
+                selectionMode = true
+                selected = setOf(app.packageName)
+            },
+        )
+    }
 }
 
 @Composable
+private fun SelectionBar(
+    count: Int,
+    onCancel: () -> Unit,
+    onHide: () -> Unit,
+    onUninstall: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onCancel) { Icon(Icons.Rounded.Close, contentDescription = "Cancel") }
+        Text(
+            "$count selected",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(start = 4.dp).weight(1f),
+        )
+        IconButton(onClick = onHide, enabled = count > 0) {
+            Icon(Icons.Rounded.VisibilityOff, contentDescription = "Hide selected")
+        }
+        IconButton(onClick = onUninstall, enabled = count > 0) {
+            Icon(Icons.Rounded.Delete, contentDescription = "Uninstall selected")
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 private fun AppGridItem(
     app: AppInfo,
+    selected: Boolean,
+    hidden: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    onLongClick: () -> Unit,
 ) {
-    // Rasterize the system Drawable into a Compose ImageBitmap once per app.
-    // Using androidx.core's toBitmap() keeps us on first-party APIs (no Accompanist).
-    val iconBitmap = remember(app.packageName) {
-        app.icon.toBitmap(width = ICON_PX, height = ICON_PX).asImageBitmap()
-    }
-
     Column(
-        modifier = modifier
+        modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .padding(vertical = 8.dp)
+            .alpha(if (hidden) 0.45f else 1f),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Image(
-            bitmap = iconBitmap,
-            contentDescription = app.label,
-            modifier = Modifier.size(52.dp),
-        )
+        AppIcon(icon = app.icon, contentDescription = app.label, modifier = Modifier.size(52.dp))
         Text(
             text = app.label,
             color = MaterialTheme.colorScheme.onSurface,

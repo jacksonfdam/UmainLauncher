@@ -6,9 +6,17 @@ inspired by [NoLagLauncher](https://github.com/M1nexoff/NoLagLauncher).
 It shows what actually turns an app into a *launcher* and keeps everything else
 as small as possible:
 
-- A wallpaper-facing **home screen** with a live clock.
-- A **swipe-up app drawer** with a searchable grid of every installed app.
-- Tapping an app launches it.
+- A wallpaper-facing **home screen** with a live clock and a **favorites dock**.
+- A **swipe-up app drawer** with a grid searchable by label *or* package name.
+- Tap to launch; **long-press** for App info, copy package name, pin, hide or uninstall.
+- **Multi-select mode** to hide or uninstall several apps at once.
+- **Hidden apps** persist (DataStore) and can be revealed with a toggle.
+
+Dev/pentest oriented:
+
+- **Activity Launcher** — inspect a package (version, SDK levels, `debuggable`/`allowBackup`/
+  `system` flags, permissions) and fire any of its activities directly.
+- **Dev shortcuts** — quick chips into Developer options, Device info and Settings.
 
 > The full step-by-step tutorial lives in [`posts/`](posts/) — in
 > [English](posts/how-to-build-an-android-launcher.en.md) and
