@@ -1,5 +1,7 @@
 package com.umain.launcher.ui
 
+import android.app.Activity
+import android.appwidget.AppWidgetManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -31,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.umain.launcher.data.AppInfo
 import com.umain.launcher.data.LauncherSettings
+import com.umain.launcher.data.WidgetPlacement
 import kotlinx.coroutines.launch
 
 /**
@@ -83,6 +86,70 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
         Toast.makeText(context, "Copied ${app.packageName}", Toast.LENGTH_SHORT).show()
     }
 
+    // --- AppWidget hosting: pick -> (configure) -> persist ---
+    val appWidgetHost = LocalAppWidgetHost.current
+    var pendingConfigureId by remember { mutableStateOf(-1) }
+
+    val configureLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val id = pendingConfigureId
+        pendingConfigureId = -1
+        if (id != -1) {
+            if (result.resultCode == Activity.RESULT_OK) {
+                viewModel.setWidgetPlacement("aw_$id", WidgetPlacement(dx = 24f, dy = 240f))
+            } else {
+                appWidgetHost?.deleteId(id)
+            }
+        }
+    }
+
+    val pickLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val id = result.data?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) ?: -1
+        val configure = if (id != -1) appWidgetHost?.info(id)?.configure else null
+        when {
+            result.resultCode != Activity.RESULT_OK || id == -1 -> if (id != -1) appWidgetHost?.deleteId(id)
+            configure != null -> {
+                pendingConfigureId = id
+                configureLauncher.launch(
+                    Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE).apply {
+                        component = configure
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                    },
+                )
+            }
+            else -> viewModel.setWidgetPlacement("aw_$id", WidgetPlacement(dx = 24f, dy = 240f))
+        }
+    }
+
+    val onAddWidget: () -> Unit = onAddWidget@{
+        val host = appWidgetHost ?: return@onAddWidget
+        val id = host.allocateId()
+        val ok = runCatching {
+            pickLauncher.launch(
+                Intent(AppWidgetManager.ACTION_APPWIDGET_PICK)
+                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id),
+            )
+        }.isSuccess
+        if (!ok) {
+            host.deleteId(id)
+            Toast.makeText(context, "No widget picker available", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val hostedWidgets = remember(widgetLayout) {
+        widgetLayout.entries
+            .filter { it.key.startsWith("aw_") }
+            .mapNotNull { e -> e.key.removePrefix("aw_").toIntOrNull()?.let { it to e.value } }
+    }
+
+    val onRemoveWidget: (Int) -> Unit = { id ->
+        appWidgetHost?.deleteId(id)
+        viewModel.removeWidgetPlacement("aw_$id")
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         HomeScreen(
             favorites = favoriteApps,
@@ -94,6 +161,8 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
             layout = widgetLayout,
             statsProvider = { viewModel.systemStats() },
             onPlacementChange = viewModel::setWidgetPlacement,
+            appWidgets = hostedWidgets,
+            onRemoveWidget = onRemoveWidget,
         )
 
         AnimatedVisibility(
@@ -159,6 +228,7 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
                 onColorTheme = viewModel::setColorTheme,
                 onShowStatusWidget = viewModel::setShowStatusWidget,
                 onResetLayout = viewModel::resetWidgetLayout,
+                onAddWidget = onAddWidget,
                 onOpenSystemWallpaper = viewModel::openWallpaperPicker,
                 onApplyWallpaper = { uri, which ->
                     scope.launch {

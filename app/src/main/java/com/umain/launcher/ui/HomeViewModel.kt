@@ -108,6 +108,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun setWidgetPlacement(id: String, placement: WidgetPlacement) {
         viewModelScope.launch { preferences.setWidgetPlacement(id, placement) }
     }
+    fun removeWidgetPlacement(id: String) { viewModelScope.launch { preferences.removeWidgetPlacement(id) } }
     fun resetWidgetLayout() { viewModelScope.launch { preferences.resetWidgetLayout() } }
 
     fun systemStats(): SystemStats = repository.readSystemStats()

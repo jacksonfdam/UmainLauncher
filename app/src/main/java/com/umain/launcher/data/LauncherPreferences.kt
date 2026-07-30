@@ -89,6 +89,12 @@ class LauncherPreferences(context: Context) {
         it[WIDGET_LAYOUT] = formatLayout(current)
     }
 
+    suspend fun removeWidgetPlacement(id: String) = store.edit {
+        val current = parseLayout(it[WIDGET_LAYOUT]).toMutableMap()
+        current.remove(id)
+        it[WIDGET_LAYOUT] = formatLayout(current)
+    }
+
     suspend fun resetWidgetLayout() = store.edit { it.remove(WIDGET_LAYOUT) }
 
     private fun parseLayout(raw: String?): Map<String, WidgetPlacement> =
