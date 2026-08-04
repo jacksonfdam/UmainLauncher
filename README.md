@@ -88,15 +88,90 @@ Verified against the current stable toolchain (July 2026):
 
 1. Open the project in Android Studio and let it sync.
 2. Run the `app` configuration on an emulator or device.
-3. Press the **Home** button and pick **Umain Launcher** → *Always*.
 
 From the command line (SDK configured in `local.properties`):
 
 ```bash
-./gradlew installDebug
+./gradlew installDebug        # build + install on the connected device
 ```
 
-To go back to your normal launcher: **Settings → Apps → Default apps → Home app**.
+Installing only puts the app on the device — it does **not** take over the home screen.
+For that, see below.
+
+## Set it as the default launcher
+
+> [!WARNING]
+> **Keep a second launcher installed.** This app declares `category.HOME`, so it can
+> become the *only* home app on the device. If it is the only one and it crashes or you
+> uninstall it, you can be left with no way back to a home screen. Stock launchers
+> (One UI Home, Pixel Launcher) are system apps and can't be uninstalled, so on a normal
+> phone you already have a fallback — just don't test this on a device where you removed it.
+
+Any of these three routes works — pick whichever is handiest.
+
+**1 · The Home button prompt.** Press **Home**. If more than one launcher is installed,
+Android asks which to use: pick **Umain Launcher**, then **Always**. On some builds
+(One UI included) pressing Home goes straight to the current launcher without asking —
+use route 2 there.
+
+**2 · Settings.** Open **Settings**, search for **Default apps**, then **Home app** →
+**Umain Launcher**. Searching avoids guessing, because the breadcrumb differs per skin;
+on One UI 8 it is **Settings → Apps → Choose default apps → Home app**. Either way you
+land on the screen below, titled **Default home app**:
+
+<p align="center">
+  <img src="docs/screenshots/13-default-home-app.png" width="300"
+       alt="Android's Default home app screen listing One UI Home and Umain Launcher, with Umain Launcher selected">
+</p>
+
+**3 · adb** — no tapping, handy while iterating:
+
+```bash
+adb shell cmd package set-home-activity com.umain.launcher/.MainActivity
+```
+
+It prints `Success` once the role is reassigned. To jump straight to the picker instead:
+
+```bash
+adb shell am start -a android.settings.HOME_SETTINGS
+```
+
+### Going back to your normal launcher
+
+Use the same **Default home app** screen and pick your previous launcher (**One UI Home**,
+**Pixel Launcher**, …). Or via adb, passing that launcher's component:
+
+```bash
+# One UI Home (Samsung)
+adb shell cmd package set-home-activity \
+  com.sec.android.app.launcher/.activities.LauncherActivity
+
+# Pixel Launcher
+adb shell cmd package set-home-activity \
+  com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+```
+
+Not sure of the component? List every home activity on the device — the raw dump is very
+verbose, so filter it down:
+
+```bash
+adb shell cmd package query-activities \
+  -a android.intent.action.MAIN -c android.intent.category.HOME |
+  grep -E '^\s+(packageName|name)=' | grep -v Application
+```
+
+Each launcher shows up as a `name=` / `packageName=` pair; join them as
+`packageName/name` to get the component. `com.android.settings.FallbackHome` is the
+system's own stub — ignore it.
+
+And to check which launcher currently holds the role:
+
+```bash
+adb shell cmd package resolve-activity \
+  -a android.intent.action.MAIN -c android.intent.category.HOME | grep -m1 packageName=
+```
+
+Uninstalling Umain Launcher also hands the home role back to the remaining launcher.
 
 ## Project layout
 
