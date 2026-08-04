@@ -36,6 +36,39 @@ Dev/pentest oriented:
 > [English](posts/how-to-build-an-android-launcher.en.md) and
 > [Português-BR](posts/como-criar-um-launcher-android.pt-BR.md).
 
+## Screenshots
+
+Captured on a Samsung Galaxy A34 (Android 16, One UI 8) running the debug build as
+the default home app.
+
+### Home & drawer
+
+| Home screen | App drawer | Package search |
+|:---:|:---:|:---:|
+| ![Home screen with clock, status widget, a hosted Google Search widget and the favorites dock](docs/screenshots/01-home.jpg) | ![App drawer showing the searchable icon grid and dev shortcut chips](docs/screenshots/02-app-drawer.png) | ![Drawer filtered by the package prefix com.google](docs/screenshots/03-package-search.png) |
+| Live clock, the battery/storage/memory **status widget**, a hosted **system app widget**, and the favorites dock — each movable and resizable. | Searchable grid with **Dev options / Device info / Settings** shortcut chips. | The search box matches the **package name**, not just the label. |
+
+### App actions
+
+| Long-press actions | Multi-select | Minimal layout |
+|:---:|:---:|:---:|
+| ![Bottom sheet with App info, Copy package name, Activities, Pin to dock, Hide from drawer, Uninstall and Select multiple](docs/screenshots/04-app-actions.png) | ![Drawer in selection mode with four apps selected and hide/uninstall actions in the top bar](docs/screenshots/05-multi-select.png) | ![Text-only right-aligned app list](docs/screenshots/06-minimal-layout.png) |
+| App info, copy package name, activity launcher, pin, hide, uninstall. | Hide or uninstall several apps in one pass. | **Minimal AF** — names only, no icons. |
+
+### Settings
+
+| Layout & icons | Theme, home & wallpaper | Widget picker |
+|:---:|:---:|:---:|
+| ![Settings showing layout mode, grid columns, icon size, icon shape and icon filter](docs/screenshots/07-settings-layout.png) | ![Settings showing theme mode, dynamic color, status widget toggle, Add widget and wallpaper buttons](docs/screenshots/08-settings-home.png) | ![Dialog listing installed app widgets to add to the home screen](docs/screenshots/09-widget-picker.png) |
+| Grid or Minimal, columns, icon size, **shape** and **color filter**. | Theme mode, Material You, home-layout controls and wallpaper. | *Add widget* lists every installed `AppWidgetProvider`. |
+
+### Dev / pentest tools
+
+| Package inspector | Permissions | Activity launcher |
+|:---:|:---:|:---:|
+| ![Package details: version, SDK levels, UID, installer, install dates, signing SHA-256, APK path and manifest flags](docs/screenshots/10-package-inspector.png) | ![Permission list with protection level and grant state badges, including dangerous ones](docs/screenshots/11-permissions.png) | ![Activity list with exported and internal badges](docs/screenshots/12-activity-launcher.png) |
+| Version, SDK levels, UID, installer, dates, **signing SHA-256**, APK path, manifest flags. | Every requested permission with its **protection level** and **grant state**. | Fire any activity directly; `exported` vs `internal` is called out. |
+
 ## Requirements
 
 Verified against the current stable toolchain (July 2026):
