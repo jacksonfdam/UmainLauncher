@@ -20,6 +20,9 @@ as small as possible:
 - **Movable home widgets** — the clock, favorites dock and a **status widget**
   (battery / storage / memory) are each draggable, snap to a grid, and resize via a
   corner handle. Positions persist; "Reset home layout" in Settings › Home.
+- **System app widgets** — host third-party home-screen widgets via `AppWidgetHost`.
+  Add from Settings › Home › *Add widget*; move (handle), resize and remove (×) like
+  the built-in widgets. Bindings and placement persist.
 
 Dev/pentest oriented:
 

@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -62,6 +63,8 @@ fun HomeScreen(
     layout: Map<String, WidgetPlacement>,
     statsProvider: () -> SystemStats,
     onPlacementChange: (String, WidgetPlacement) -> Unit,
+    appWidgets: List<Pair<Int, WidgetPlacement>>,
+    onRemoveWidget: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -90,6 +93,19 @@ fun HomeScreen(
                 onCommit = { onPlacementChange(WidgetIds.STATUS, it) },
                 modifier = Modifier.align(Alignment.TopStart).statusBarsPadding(),
             ) { StatusWidgetContent(statsProvider) }
+        }
+
+        appWidgets.forEach { (id, placement) ->
+            key(id) {
+                MovableWidget(
+                    placement = placement,
+                    resizable = true,
+                    dragViaHandle = true,
+                    onRemove = { onRemoveWidget(id) },
+                    onCommit = { onPlacementChange("aw_$id", it) },
+                    modifier = Modifier.align(Alignment.TopStart),
+                ) { HostedAppWidget(id) }
+            }
         }
 
         if (favorites.isNotEmpty()) {

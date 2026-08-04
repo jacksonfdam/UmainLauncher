@@ -66,6 +66,7 @@ fun SettingsScreen(
     onColorTheme: (ColorTheme) -> Unit,
     onShowStatusWidget: (Boolean) -> Unit,
     onResetLayout: () -> Unit,
+    onAddWidget: () -> Unit,
     onOpenSystemWallpaper: () -> Unit,
     onApplyWallpaper: (Uri, Int) -> Unit,
     onBack: () -> Unit,
@@ -173,6 +174,9 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Button(onClick = onAddWidget, modifier = Modifier.fillMaxWidth()) {
+                        Text("Add widget")
+                    }
                     OutlinedButton(onClick = onResetLayout, modifier = Modifier.fillMaxWidth()) {
                         Text("Reset home layout")
                     }
