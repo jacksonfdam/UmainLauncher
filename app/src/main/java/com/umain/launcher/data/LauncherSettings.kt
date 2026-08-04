@@ -18,6 +18,12 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
  */
 enum class LayoutMode { GRID, MINIMAL }
 
+/** Preset accent palette used when Material You (dynamic color) is off. */
+enum class ColorTheme { PURPLE, GREEN, BLUE, AMBER, MONO }
+
+/** Uniform mask applied to app icons. [SYSTEM] keeps the icon's own shape. */
+enum class IconShape { SYSTEM, CIRCLE, SQUIRCLE, ROUNDED }
+
 /**
  * User-configurable launcher settings, persisted via [LauncherPreferences].
  * Kept Compose-free so it lives in the data layer; the UI layer maps the enums
@@ -28,6 +34,9 @@ data class LauncherSettings(
     val columns: Int = 4,
     val iconSize: IconSize = IconSize.MEDIUM,
     val iconFilter: IconFilter = IconFilter.NONE,
+    val iconShape: IconShape = IconShape.SYSTEM,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
+    val colorTheme: ColorTheme = ColorTheme.PURPLE,
+    val showStatusWidget: Boolean = true,
 )

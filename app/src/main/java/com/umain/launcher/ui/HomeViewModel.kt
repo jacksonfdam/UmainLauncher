@@ -6,13 +6,17 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.umain.launcher.data.AppInfo
 import com.umain.launcher.data.AppRepository
+import com.umain.launcher.data.ColorTheme
 import com.umain.launcher.data.IconFilter
+import com.umain.launcher.data.IconShape
 import com.umain.launcher.data.IconSize
 import com.umain.launcher.data.LauncherPreferences
 import com.umain.launcher.data.LauncherSettings
 import com.umain.launcher.data.LayoutMode
 import com.umain.launcher.data.PackageDetails
+import com.umain.launcher.data.SystemStats
 import com.umain.launcher.data.ThemeMode
+import com.umain.launcher.data.WidgetPlacement
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +57,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val settings: StateFlow<LauncherSettings> = preferences.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LauncherSettings())
 
+    /** Per-widget home placement (position + scale). */
+    val widgetLayout: StateFlow<Map<String, WidgetPlacement>> = preferences.widgetLayout
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     init {
         refresh()
     }
@@ -84,14 +92,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun inspectPackage(packageName: String): PackageDetails? =
         repository.inspectPackage(packageName)
 
+    suspend fun shareApk(packageName: String): Boolean = repository.shareApk(packageName)
+
     // --- Appearance settings ---
 
     fun setLayout(mode: LayoutMode) { viewModelScope.launch { preferences.setLayout(mode) } }
     fun setColumns(columns: Int) { viewModelScope.launch { preferences.setColumns(columns) } }
     fun setIconSize(size: IconSize) { viewModelScope.launch { preferences.setIconSize(size) } }
     fun setIconFilter(filter: IconFilter) { viewModelScope.launch { preferences.setIconFilter(filter) } }
+    fun setIconShape(shape: IconShape) { viewModelScope.launch { preferences.setIconShape(shape) } }
     fun setThemeMode(mode: ThemeMode) { viewModelScope.launch { preferences.setThemeMode(mode) } }
     fun setDynamicColor(enabled: Boolean) { viewModelScope.launch { preferences.setDynamicColor(enabled) } }
+    fun setColorTheme(theme: ColorTheme) { viewModelScope.launch { preferences.setColorTheme(theme) } }
+    fun setShowStatusWidget(show: Boolean) { viewModelScope.launch { preferences.setShowStatusWidget(show) } }
+    fun setWidgetPlacement(id: String, placement: WidgetPlacement) {
+        viewModelScope.launch { preferences.setWidgetPlacement(id, placement) }
+    }
+    fun resetWidgetLayout() { viewModelScope.launch { preferences.resetWidgetLayout() } }
+
+    fun systemStats(): SystemStats = repository.readSystemStats()
 
     // --- Wallpaper ---
 

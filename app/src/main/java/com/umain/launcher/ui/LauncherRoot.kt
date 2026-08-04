@@ -48,6 +48,7 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
     val hidden by viewModel.hiddenPackages.collectAsStateWithLifecycle()
     val favoritePackages by viewModel.favoritePackages.collectAsStateWithLifecycle()
     val favoriteApps by viewModel.favoriteApps.collectAsStateWithLifecycle()
+    val widgetLayout by viewModel.widgetLayout.collectAsStateWithLifecycle()
 
     var drawerOpen by remember { mutableStateOf(false) }
     var inspecting by remember { mutableStateOf<AppInfo?>(null) }
@@ -89,6 +90,10 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
             onOpenSettings = { showSettings = true },
             onLaunchFavorite = { viewModel.launch(it.packageName) },
             onUnpinFavorite = { viewModel.toggleFavorite(it.packageName) },
+            showStatusWidget = settings.showStatusWidget,
+            layout = widgetLayout,
+            statsProvider = { viewModel.systemStats() },
+            onPlacementChange = viewModel::setWidgetPlacement,
         )
 
         AnimatedVisibility(
@@ -125,6 +130,13 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
                     app = app,
                     loadDetails = { viewModel.inspectPackage(it) },
                     onLaunchActivity = { pkg, cls -> viewModel.launchActivity(pkg, cls) },
+                    onShareApk = {
+                        scope.launch {
+                            if (!viewModel.shareApk(app.packageName)) {
+                                Toast.makeText(context, "Couldn't export APK", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
                     onBack = { inspecting = null },
                 )
             }
@@ -141,8 +153,12 @@ fun LauncherRoot(viewModel: HomeViewModel, settings: LauncherSettings) {
                 onColumns = viewModel::setColumns,
                 onIconSize = viewModel::setIconSize,
                 onIconFilter = viewModel::setIconFilter,
+                onIconShape = viewModel::setIconShape,
                 onThemeMode = viewModel::setThemeMode,
                 onDynamicColor = viewModel::setDynamicColor,
+                onColorTheme = viewModel::setColorTheme,
+                onShowStatusWidget = viewModel::setShowStatusWidget,
+                onResetLayout = viewModel::resetWidgetLayout,
                 onOpenSystemWallpaper = viewModel::openWallpaperPicker,
                 onApplyWallpaper = { uri, which ->
                     scope.launch {

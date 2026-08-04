@@ -9,14 +9,36 @@ data class ActivityEntry(
     val exported: Boolean,
     val enabled: Boolean,
 ) {
-    /** e.g. `com.foo.bar.ui.SecretActivity` -> `SecretActivity`. */
     val shortName: String get() = className.substringAfterLast('.')
 }
 
+/** Manifest component kinds we surface as attack surface. */
+enum class ComponentType { SERVICE, RECEIVER, PROVIDER }
+
+/** An exported service/receiver/provider — attack surface, especially with no permission. */
+data class ComponentEntry(
+    val type: ComponentType,
+    val className: String,
+    val permission: String?,
+) {
+    val shortName: String get() = className.substringAfterLast('.')
+    val unprotected: Boolean get() = permission.isNullOrBlank()
+}
+
+/** Android permission protection level. */
+enum class ProtectionLevel { NORMAL, DANGEROUS, SIGNATURE, INTERNAL, UNKNOWN }
+
+/** A requested permission plus its runtime grant state and protection level. */
+data class PermissionEntry(
+    val name: String,
+    val granted: Boolean,
+    val protection: ProtectionLevel,
+) {
+    val shortName: String get() = name.substringAfterLast('.')
+}
+
 /**
- * A snapshot of a package worth eyeballing during dev/pentest work: version,
- * SDK levels, the security-relevant manifest flags, requested permissions and the
- * full activity list.
+ * A security-oriented snapshot of a package for dev/pentest work.
  */
 data class PackageDetails(
     val packageName: String,
@@ -27,7 +49,19 @@ data class PackageDetails(
     val targetSdk: Int,
     val debuggable: Boolean,
     val allowsBackup: Boolean,
+    val usesCleartextTraffic: Boolean,
     val isSystem: Boolean,
-    val permissions: List<String>,
+    val signatureSha256: String?,
+    val installerPackage: String?,
+    val firstInstallTime: Long,
+    val lastUpdateTime: Long,
+    val uid: Int,
+    val sharedUserId: String?,
+    val apkPath: String?,
+    val permissions: List<PermissionEntry>,
     val activities: List<ActivityEntry>,
-)
+    val exportedComponents: List<ComponentEntry>,
+) {
+    val dangerousGranted: List<PermissionEntry>
+        get() = permissions.filter { it.protection == ProtectionLevel.DANGEROUS && it.granted }
+}

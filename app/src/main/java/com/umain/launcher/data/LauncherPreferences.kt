@@ -37,10 +37,17 @@ class LauncherPreferences(context: Context) {
             columns = (p[COLUMNS] ?: 4).coerceIn(COLUMN_RANGE.first, COLUMN_RANGE.last),
             iconSize = p[ICON_SIZE].toEnum(IconSize.MEDIUM),
             iconFilter = p[ICON_FILTER].toEnum(IconFilter.NONE),
+            iconShape = p[ICON_SHAPE].toEnum(IconShape.SYSTEM),
             themeMode = p[THEME_MODE].toEnum(ThemeMode.SYSTEM),
             dynamicColor = p[DYNAMIC_COLOR] ?: true,
+            colorTheme = p[COLOR_THEME].toEnum(ColorTheme.PURPLE),
+            showStatusWidget = p[SHOW_WIDGET] ?: true,
         )
     }
+
+    /** Per-widget home placement (position + scale), keyed by [WidgetIds]. */
+    val widgetLayout: Flow<Map<String, WidgetPlacement>> =
+        store.data.map { parseLayout(it[WIDGET_LAYOUT]) }
 
     suspend fun setHidden(packageNames: Collection<String>, hidden: Boolean) {
         store.edit { prefs ->
@@ -66,9 +73,35 @@ class LauncherPreferences(context: Context) {
 
     suspend fun setIconFilter(filter: IconFilter) = store.edit { it[ICON_FILTER] = filter.name }
 
+    suspend fun setIconShape(shape: IconShape) = store.edit { it[ICON_SHAPE] = shape.name }
+
     suspend fun setThemeMode(mode: ThemeMode) = store.edit { it[THEME_MODE] = mode.name }
 
     suspend fun setDynamicColor(enabled: Boolean) = store.edit { it[DYNAMIC_COLOR] = enabled }
+
+    suspend fun setColorTheme(theme: ColorTheme) = store.edit { it[COLOR_THEME] = theme.name }
+
+    suspend fun setShowStatusWidget(show: Boolean) = store.edit { it[SHOW_WIDGET] = show }
+
+    suspend fun setWidgetPlacement(id: String, placement: WidgetPlacement) = store.edit {
+        val current = parseLayout(it[WIDGET_LAYOUT]).toMutableMap()
+        current[id] = placement
+        it[WIDGET_LAYOUT] = formatLayout(current)
+    }
+
+    suspend fun resetWidgetLayout() = store.edit { it.remove(WIDGET_LAYOUT) }
+
+    private fun parseLayout(raw: String?): Map<String, WidgetPlacement> =
+        raw?.split(";").orEmpty().mapNotNull { entry ->
+            runCatching {
+                val (id, rest) = entry.split(":", limit = 2)
+                val (dx, dy, scale) = rest.split(",")
+                id to WidgetPlacement(dx.toFloat(), dy.toFloat(), scale.toFloat())
+            }.getOrNull()
+        }.toMap()
+
+    private fun formatLayout(map: Map<String, WidgetPlacement>): String =
+        map.entries.joinToString(";") { (id, p) -> "$id:${p.dx},${p.dy},${p.scale}" }
 
     private inline fun <reified T : Enum<T>> String?.toEnum(default: T): T =
         this?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: default
@@ -80,8 +113,12 @@ class LauncherPreferences(context: Context) {
         val COLUMNS = intPreferencesKey("grid_columns")
         val ICON_SIZE = stringPreferencesKey("icon_size")
         val ICON_FILTER = stringPreferencesKey("icon_filter")
+        val ICON_SHAPE = stringPreferencesKey("icon_shape")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val COLOR_THEME = stringPreferencesKey("color_theme")
+        val SHOW_WIDGET = booleanPreferencesKey("show_status_widget")
+        val WIDGET_LAYOUT = stringPreferencesKey("widget_layout")
         const val SEPARATOR = "\n"
     }
 }

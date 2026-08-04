@@ -40,7 +40,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.umain.launcher.data.COLUMN_RANGE
+import com.umain.launcher.data.ColorTheme
 import com.umain.launcher.data.IconFilter
+import com.umain.launcher.data.IconShape
 import com.umain.launcher.data.IconSize
 import com.umain.launcher.data.LauncherSettings
 import com.umain.launcher.data.LayoutMode
@@ -58,8 +60,12 @@ fun SettingsScreen(
     onColumns: (Int) -> Unit,
     onIconSize: (IconSize) -> Unit,
     onIconFilter: (IconFilter) -> Unit,
+    onIconShape: (IconShape) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
     onDynamicColor: (Boolean) -> Unit,
+    onColorTheme: (ColorTheme) -> Unit,
+    onShowStatusWidget: (Boolean) -> Unit,
+    onResetLayout: () -> Unit,
     onOpenSystemWallpaper: () -> Unit,
     onApplyWallpaper: (Uri, Int) -> Unit,
     onBack: () -> Unit,
@@ -120,6 +126,8 @@ fun SettingsScreen(
                         }
                         Text("Icon size", style = MaterialTheme.typography.bodyMedium)
                         ChipRow(IconSize.entries, settings.iconSize, onIconSize) { it.displayName() }
+                        Text("Icon shape", style = MaterialTheme.typography.bodyMedium)
+                        ChipRow(IconShape.entries, settings.iconShape, onIconShape) { it.displayName() }
                     }
 
                     Section("Icon filter") {
@@ -140,6 +148,33 @@ fun SettingsScreen(
                             )
                         }
                         Switch(checked = settings.dynamicColor, onCheckedChange = onDynamicColor)
+                    }
+                    if (!settings.dynamicColor) {
+                        Text("Accent", style = MaterialTheme.typography.bodyMedium)
+                        ChipRow(ColorTheme.entries, settings.colorTheme, onColorTheme) { it.displayName() }
+                    }
+                }
+
+                // --- Home ---
+                Section("Home") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Status widget")
+                            Text(
+                                "Draggable battery / storage / memory",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(checked = settings.showStatusWidget, onCheckedChange = onShowStatusWidget)
+                    }
+                    Text(
+                        "Drag widgets to move, drag the corner handle to resize; they snap to a grid.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(onClick = onResetLayout, modifier = Modifier.fillMaxWidth()) {
+                        Text("Reset home layout")
                     }
                 }
 
